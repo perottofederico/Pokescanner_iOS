@@ -19,8 +19,8 @@ app_path='build/device/Build/Products/Release-iphoneos/PokeCapture.app'
 extension_path="$app_path/PlugIns/BroadcastUpload.appex"
 test -f "$app_path/PokeCapture"
 test -f "$extension_path/BroadcastUpload"
-xcrun lipo -verify_arch arm64 "$app_path/PokeCapture"
-xcrun lipo -verify_arch arm64 "$extension_path/BroadcastUpload"
+xcrun lipo "$app_path/PokeCapture" -verify_arch arm64
+xcrun lipo "$extension_path/BroadcastUpload" -verify_arch arm64
 
 ditto "$app_path" build/package/Payload/PokeCapture.app
 (

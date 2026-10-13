@@ -31,8 +31,8 @@ jobs:
       run:
         shell: bash
     steps:
-      - name: Check out source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check out source (v7.0.1)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Install project generator
         run: |
@@ -48,20 +48,28 @@ jobs:
         run: xcodegen generate --spec project.json
 
       - name: Compile device app and package unsigned IPA
+        id: device_build
         run: bash scripts/build-ios.sh
 
       - name: Build simulator and smoke-test launch
         run: bash scripts/smoke-simulator.sh
 
       - name: Upload unsigned app and simulator evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: ${{ !cancelled() && steps.device_build.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: PokeCapture-demo
-          path: |
-            build/artifacts/
-            build/*.log
-          if-no-files-found: warn
+          path: build/artifacts/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: PokeCapture-diagnostics
+          path: build/*.log
+          if-no-files-found: ignore
           retention-days: 7
 
       - name: Summarize next steps

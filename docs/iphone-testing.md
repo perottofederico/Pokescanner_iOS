@@ -12,11 +12,13 @@ GitHub Actions compiles the app on a hosted Mac. The artifact is an **unsigned I
 
 ## 1. Build using GitHub Actions
 
-1. Create a GitHub repository and push this project to `main` or `master`. This working tree does not have a remote configured yet. A public repository exposes your source code; choose public only if that is acceptable.
+1. Push this project to your GitHub repository on `main` or `master`. A public repository exposes your source code; choose public only if that is acceptable.
 2. Open the repository's **Actions** tab and select **Build iPhone capture demo**. It runs on relevant pushes; you can also use **Run workflow** after the workflow is on the default branch.
 3. Wait for a successful run. It generates the Xcode project, compiles both device targets, packages the IPA, checks the embedded extension, and builds/launches a simulator app.
-4. Download the **PokeCapture-demo** artifact and extract it. The app is `PokeCapture-unsigned.ipa`. You also get build logs, tool versions, a checksum, and simulator launch evidence.
+4. Download the **PokeCapture-demo** artifact and extract it. The app is `PokeCapture-unsigned.ipa`. You also get tool versions, a checksum, and simulator launch evidence. Build logs are in the separate **PokeCapture-diagnostics** artifact, which may also be uploaded after a failed build. A diagnostics upload does not mean an IPA was produced.
 5. A green workflow does **not** establish that screen capture works on an iPhone. Complete the physical-device steps below.
+
+If a workflow fails after **BUILD SUCCEEDED**, inspect the failing packaging/validation command: compilation success does not imply that an IPA was packaged. After fixing the source, commit and push the changes and use the new workflow run. **Re-run jobs** on an older run uses its original commit and will not include newly pushed fixes. The simulator and success summary normally skip after an earlier failure; diagnostic uploads and checkout cleanup can still run.
 
 ## 2. Set up AltStore Classic on Windows
 
