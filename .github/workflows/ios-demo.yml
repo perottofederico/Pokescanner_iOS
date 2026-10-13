@@ -1,0 +1,77 @@
+name: Build iPhone capture demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ios/**'
+      - 'scripts/**'
+      - 'project.json'
+      - '.github/workflows/ios-demo.yml'
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'scripts/**'
+      - 'project.json'
+      - '.github/workflows/ios-demo.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-demo-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install project generator
+        run: |
+          brew install xcodegen
+          xcodegen --version
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Validate source configuration
+        run: python3 scripts/validate-project.py
+
+      - name: Generate Xcode project
+        run: xcodegen generate --spec project.json
+
+      - name: Compile device app and package unsigned IPA
+        run: bash scripts/build-ios.sh
+
+      - name: Build simulator and smoke-test launch
+        run: bash scripts/smoke-simulator.sh
+
+      - name: Upload unsigned app and simulator evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: PokeCapture-demo
+          path: |
+            build/artifacts/
+            build/*.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Summarize next steps
+        if: success()
+        run: |
+          {
+            echo '## Capture demo built'
+            echo '- Device app and ReplayKit extension compiled without signing.'
+            echo '- Simulator app launched; screenshot is included in the artifact.'
+            echo '- Download PokeCapture-demo and install PokeCapture-unsigned.ipa using AltStore Classic on Windows.'
+            echo '- Keep App Extensions when prompted. The IPA cannot be installed directly.'
+            echo '- Live screen capture is NOT tested by this workflow; follow docs/iphone-testing.md on your iPhone.'
+          } >> "$GITHUB_STEP_SUMMARY"

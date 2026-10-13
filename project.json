@@ -1,0 +1,62 @@
+{
+  "name": "PokeCapture",
+  "options": {
+    "minimumXcodeGenVersion": "2.44.0",
+    "deploymentTarget": { "iOS": "16.0" }
+  },
+  "settings": {
+    "base": {
+      "SWIFT_VERSION": "5.0",
+      "MARKETING_VERSION": "0.1.0",
+      "CURRENT_PROJECT_VERSION": "1",
+      "CODE_SIGNING_ALLOWED": "NO",
+      "TARGETED_DEVICE_FAMILY": "1,2"
+    }
+  },
+  "targets": {
+    "PokeCapture": {
+      "type": "application",
+      "platform": "iOS",
+      "sources": [
+        { "path": "ios/PokeCapture", "excludes": ["Info.plist"] },
+        "ios/Shared"
+      ],
+      "settings": {
+        "base": {
+          "PRODUCT_BUNDLE_IDENTIFIER": "com.pokecapture.demo",
+          "INFOPLIST_FILE": "ios/PokeCapture/Info.plist",
+          "GENERATE_INFOPLIST_FILE": "NO",
+          "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
+          "SUPPORTS_MACCATALYST": "NO"
+        }
+      },
+      "dependencies": [
+        { "target": "BroadcastUpload", "embed": true, "codeSign": false }
+      ]
+    },
+    "BroadcastUpload": {
+      "type": "app-extension",
+      "platform": "iOS",
+      "sources": [
+        { "path": "ios/BroadcastUpload", "excludes": ["Info.plist"] },
+        "ios/Shared"
+      ],
+      "settings": {
+        "base": {
+          "PRODUCT_BUNDLE_IDENTIFIER": "com.pokecapture.demo.BroadcastUpload",
+          "INFOPLIST_FILE": "ios/BroadcastUpload/Info.plist",
+          "GENERATE_INFOPLIST_FILE": "NO",
+          "APPLICATION_EXTENSION_API_ONLY": "YES",
+          "SKIP_INSTALL": "YES"
+        }
+      }
+    }
+  },
+  "schemes": {
+    "PokeCapture": {
+      "build": { "targets": { "PokeCapture": "all" } },
+      "run": { "config": "Debug" },
+      "archive": { "config": "Release" }
+    }
+  }
+}
