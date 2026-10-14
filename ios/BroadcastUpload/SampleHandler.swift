@@ -112,7 +112,8 @@ final class SampleHandler: RPBroadcastSampleHandler {
                 do {
                     try flushPendingWrites()
                     let image = CIImage(cvPixelBuffer: imageBuffer).oriented(forExifOrientation: orientation)
-                    let observation = try engine.scan(image: image)
+                    var observation = try engine.scan(image: image)
+                    observation.diagnostics.append("ReplayKit input: \(CVPixelBufferGetWidth(imageBuffer))×\(CVPixelBufferGetHeight(imageBuffer)); EXIF orientation \(orientation).")
                     if let record = tracker.observe(observation) {
                         pendingWrites[record.id] = record
                         try RecognitionStorage.save(record, directory: sharedDirectory)

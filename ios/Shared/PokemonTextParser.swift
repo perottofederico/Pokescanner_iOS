@@ -29,6 +29,9 @@ final class PokemonTextParser {
     func parse(_ lines: [OCRLine]) -> PokemonObservation {
         let reliable = lines.filter { $0.confidence >= 0.4 }
         var result = PokemonObservation()
+        let cpReading = CPReader.read(lines)
+        result.cp = cpReading.value
+        result.diagnostics = cpReading.diagnostics
         let statLabels = reliable.filter { IVBarReader.stat(for: $0.text) != nil && $0.rect.minY > 0.48 }
         let hasAppraisal = statLabels.count >= 2
         let normalized = reliable.map { PokemonCatalog.normalize($0.text) }
@@ -39,11 +42,6 @@ final class PokemonTextParser {
         })
 
         for line in reliable {
-            if line.rect.minY < 0.23,
-               let captures = captures(#"(?:CP|PC)\s*[:.]?\s*(\d{1,5})"#, in: line.text.uppercased()),
-               let value = Int(captures[0]), (1...20000).contains(value) {
-                result.cp = value
-            }
             if line.rect.minY > 0.2 && line.rect.minY < 0.65,
                let captures = captures(#"(\d{1,4})\s*/\s*(\d{1,4})\s*(?:HP|PS|PV)"#, in: line.text.uppercased()),
                let current = Int(captures[0]), let maximum = Int(captures[1]),
@@ -86,6 +84,7 @@ final class PokemonTextParser {
         result.isDetailScreen = hasAppraisal || hasMeasurements || result.maxHP != nil
             || (result.cp != nil && result.identity != nil) || (hasMoveContext && !result.moves.isEmpty)
         if !result.isDetailScreen { result.identity = nil; result.moves = [] }
+        result.diagnostics.append("Screen: detail=\(result.isDetailScreen), species=\(result.identity?.name ?? "missing"), HP=\(result.maxHP.map(String.init) ?? "missing"), moves=\(result.moves.count).")
         return result
     }
 

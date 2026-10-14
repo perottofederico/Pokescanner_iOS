@@ -20,7 +20,9 @@ A native **iOS Pokémon scanner**, developed on Windows and compiled using GitHu
 - Reads English/Italian species names, CP, current/max HP, and full move names. No 3D-model classifier yet.
 - Measures visible appraisal bars for attack/defense/stamina IVs. Unclear fields stay missing, not zero.
 - Persists partial Pokémon records, enriching the current scan across nearby pages without globally merging same-species specimens.
-- Samples one frame at a time, approximately every 1.3 seconds with backpressure. Pixels/audio are discarded; only structured Pokémon data stays on device.
+- Sorts by IV, CP, Pokédex number, scan date, or name; supports protected edits and persistent removal. Rounded IV circles use quality color bands.
+- Saves cropped Pokémon thumbnails and temporary, shareable CP/OCR diagnostics. CP supports split labels/digits and enlarged top-crop retries.
+- Samples one frame at a time, approximately every 1.3 seconds with backpressure. Full frames/audio are discarded; fields, thumbnails, and bounded diagnostic text stay on device.
 - Includes native macOS checks for the supplied screenshot, parser/merging behavior, and persistence. Live capture still requires a physical-device test.
 
 ## Project layout

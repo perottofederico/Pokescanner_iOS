@@ -63,9 +63,9 @@ If the system says capture is active but no heartbeats appear even after returni
 
 ## Recognition scope
 
-- Version 0.2 adds name-based OCR, IV-bar reading, and persistent partial records with detail views. See [the recognition guide](recognition.md) for supported fields and limitations. It does not reproduce Poke Genie's UI or classify 3D models.
+- Version 0.3 adds sorting, protected editing/removal, cropped images, rounded/color-coded IV circles, and per-record CP diagnostics to the name-based OCR collection. See [the recognition guide](recognition.md) for supported fields and acceptance tests. It does not reproduce Poke Genie's UI or classify 3D models.
 - No saved video or Photos entry: this is a ReplayKit broadcast receiver, not a video-file recorder.
-- No network connection, server, uploading, saved pixel buffers, or audio processing. One sampled pixel buffer can be retained temporarily while its OCR request runs; at most one request runs at a time.
+- No automatic network connection, server, uploading, saved video, or audio processing. Small cropped model images and bounded top-screen OCR logs are retained locally; logs can be shared explicitly from details. One sampled pixel buffer can be retained temporarily while its OCR request runs; at most one request runs at a time.
 - The scanner uses visible detail-screen features, not a privileged foreground-app identifier. Verify recognition by inspecting saved Pokémon records, not just video heartbeats.
 - No automated start/stop bypassing Apple's controls, App Store submission, or TestFlight distribution.
 

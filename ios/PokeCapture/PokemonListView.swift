@@ -4,6 +4,13 @@ import SwiftUI
 struct PokemonListView: View {
     @EnvironmentObject private var library: PokemonLibrary
     @State private var selectedPhoto: PhotosPickerItem?
+    @AppStorage("pokemonSort") private var sortName = PokemonSort.date.rawValue
+    @AppStorage("pokemonSortAscending") private var ascending = false
+    @State private var pendingDeletion: PokemonRecord?
+    @State private var confirmingRemoval = false
+
+    private var sort: PokemonSort { PokemonSort(rawValue: sortName) ?? .date }
+    private var sortedRecords: [PokemonRecord] { sort.sorted(library.records, ascending: ascending) }
 
     var body: some View {
         List {
@@ -17,7 +24,7 @@ struct PokemonListView: View {
                     Text(warning).font(.caption).foregroundStyle(.orange)
                 }
             } footer: {
-                Text("English and Italian text are supported. Unreadable fields remain empty; screenshots are not stored.")
+                Text("English and Italian text are supported. Unreadable fields remain empty. Cropped Pokémon images and temporary top-screen OCR diagnostics are saved locally.")
             }
             if library.records.isEmpty {
                 Section {
@@ -31,29 +38,51 @@ struct PokemonListView: View {
                 }
             } else {
                 Section("Saved Pokémon (\(library.records.count))") {
-                    ForEach(library.records) { record in
+                    ForEach(sortedRecords) { record in
                         NavigationLink {
                             PokemonDetailView(recordID: record.id)
                         } label: {
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text(record.species).font(.headline)
-                                HStack {
+                            HStack(spacing: 10) {
+                                PokemonThumbnail(data: record.thumbnail)
+                                VStack(alignment: .leading, spacing: 5) {
+                                    Text(record.displayName).font(.headline)
                                     Text(record.cp.map { "CP \($0)" } ?? "CP not detected")
-                                    Spacer()
-                                    Text(record.ivs.percentage.map { String(format: "%.1f%% IV", $0) } ?? "IVs incomplete")
+                                        .font(.subheadline).foregroundStyle(.secondary)
+                                    Text("#\(record.speciesID) · " + record.capturedAt.formatted(date: .abbreviated, time: .shortened))
+                                        .font(.caption).foregroundStyle(.secondary)
                                 }
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                Text(record.capturedAt.formatted(date: .abbreviated, time: .shortened))
-                                    .font(.caption).foregroundStyle(.secondary)
+                                Spacer(minLength: 0)
+                                IVBadge(ivs: record.ivs)
                             }
                             .padding(.vertical, 4)
+                        }
+                        .swipeActions {
+                            Button("Remove", role: .destructive) { pendingDeletion = record; confirmingRemoval = true }
+                                .disabled(library.isMutating)
                         }
                     }
                 }
             }
         }
         .navigationTitle("Pokémon")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Picker("Sort by", selection: $sortName) {
+                        ForEach(PokemonSort.allCases) { option in Text(option.rawValue).tag(option.rawValue) }
+                    }
+                    Toggle("Ascending", isOn: $ascending)
+                } label: { Label("Sort by \(sort.rawValue)", systemImage: "arrow.up.arrow.down") }
+            }
+        }
+        .onChange(of: sortName) { value in ascending = (PokemonSort(rawValue: value) ?? .date).defaultAscending }
+        .confirmationDialog("Remove \(pendingDeletion?.displayName ?? "Pokémon")?", isPresented: $confirmingRemoval, titleVisibility: .visible) {
+            Button("Remove Pokémon", role: .destructive) {
+                if let record = pendingDeletion { Task { _ = await library.delete([record.id]) } }
+                pendingDeletion = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeletion = nil }
+        } message: { Text("This scan will be removed from your collection and will not be re-imported automatically.") }
         .refreshable { library.refresh() }
         .onChange(of: selectedPhoto) { photo in
             guard let photo else { return }

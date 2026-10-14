@@ -128,7 +128,7 @@ struct CaptureView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("On-device recognition", systemImage: "lock.shield")
                 .font(.headline)
-            Text("Species names, CP, HP, moves, and readable IVs are saved locally. Screen pixels and audio are discarded; there are no network uploads or saved recordings. Name-based recognition supports English/Italian; nicknames without a visible species reference and 3D-model-only recognition are not supported yet.")
+            Text("Species names, CP, HP, moves, IVs, a cropped Pokémon image, and temporary top-screen OCR diagnostics are saved locally. Full frames and audio are discarded; there are no network uploads or saved recordings. Diagnostics can include notification text; inspect them before sharing. Name-based recognition supports English/Italian; nickname-only and 3D-model-only recognition are not supported yet.")
             Text("iOS may warn that everything on screen is captured. Avoid passwords and private notifications; stop the broadcast when you finish testing.")
         }
         .font(.caption)

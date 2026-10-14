@@ -10,6 +10,8 @@ struct PokemonIVs: Codable, Equatable {
         return Double(attack + defense + stamina) / 45 * 100
     }
 
+    var roundedPercentage: Int? { percentage.map { Int($0.rounded(.toNearestOrAwayFromZero)) } }
+
     mutating func fill(from other: PokemonIVs) {
         if attack == nil { attack = other.attack }
         if defense == nil { defense = other.defense }
@@ -36,12 +38,19 @@ struct PokemonObservation {
     var moves: [RecognizedMove] = []
     var ivs = PokemonIVs()
     var isDetailScreen = false
+    var thumbnail: Data?
+    var diagnostics: [String] = []
+}
+
+struct ScanDiagnostic: Codable, Equatable {
+    let date: Date
+    let message: String
 }
 
 struct PokemonRecord: Codable, Equatable, Identifiable {
     let id: UUID
-    let speciesID: Int
-    let species: String
+    var speciesID: Int
+    var species: String
     var observedName: String
     var cp: Int?
     var currentHP: Int?
@@ -51,6 +60,11 @@ struct PokemonRecord: Codable, Equatable, Identifiable {
     let capturedAt: Date
     var updatedAt: Date
     let source: String
+    var thumbnail: Data?
+    var diagnostics: [ScanDiagnostic]?
+    var manuallyEdited: Bool?
+
+    var displayName: String { observedName.isEmpty ? species : observedName }
 
     init(observation: PokemonObservation, identity: PokemonIdentity, source: String, date: Date = Date()) {
         id = UUID()
@@ -65,6 +79,24 @@ struct PokemonRecord: Codable, Equatable, Identifiable {
         capturedAt = date
         updatedAt = date
         self.source = source
+        thumbnail = observation.thumbnail
+        appendDiagnostics(observation.diagnostics, at: date)
+    }
+
+    mutating func appendDiagnostics(_ messages: [String], at date: Date) {
+        mergeDiagnostics(messages.map { ScanDiagnostic(date: date, message: $0) })
+    }
+
+    mutating func mergeDiagnostics(_ events: [ScanDiagnostic]) {
+        var entries = diagnostics ?? []
+        for event in events {
+            let message = String(event.message.prefix(600))
+            if !entries.contains(where: { $0.message == message }) {
+                entries.append(ScanDiagnostic(date: event.date, message: message))
+            }
+        }
+        if entries.count > 80 { entries.removeFirst(entries.count - 80) }
+        if !entries.isEmpty { diagnostics = entries }
     }
 
     mutating func fill(from observation: PokemonObservation, at date: Date) -> Bool {
@@ -76,6 +108,8 @@ struct PokemonRecord: Codable, Equatable, Identifiable {
             if moves.count < 3 { moves.append(move) }
         }
         ivs.fill(from: observation.ivs)
+        if thumbnail == nil { thumbnail = observation.thumbnail }
+        appendDiagnostics(observation.diagnostics, at: date)
         let changed = self != previous
         if changed { updatedAt = date }
         return changed
@@ -155,6 +189,9 @@ final class PokemonTracker {
         if previous.ivs.defense == latest.ivs.defense { result.ivs.defense = latest.ivs.defense }
         if previous.ivs.stamina == latest.ivs.stamina { result.ivs.stamina = latest.ivs.stamina }
         result.moves = latest.moves.filter { move in previous.moves.contains(where: { $0.id == move.id }) }
+        if result.identity != nil { result.thumbnail = latest.thumbnail ?? previous.thumbnail }
+        result.diagnostics = previous.diagnostics + latest.diagnostics
+        result.diagnostics.append("CP consensus: previous=\(previous.cp.map(String.init) ?? "missing"), latest=\(latest.cp.map(String.init) ?? "missing"), confirmed=\(result.cp.map(String.init) ?? "missing").")
         return result
     }
 }
