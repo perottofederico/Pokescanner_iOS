@@ -8,12 +8,14 @@ on:
       - 'ios/**'
       - 'scripts/**'
       - 'project.json'
+      - 'assets/recognition-example.jpg'
       - '.github/workflows/ios-demo.yml'
   pull_request:
     paths:
       - 'ios/**'
       - 'scripts/**'
       - 'project.json'
+      - 'assets/recognition-example.jpg'
       - '.github/workflows/ios-demo.yml'
 
 permissions:
@@ -43,6 +45,15 @@ jobs:
 
       - name: Validate source configuration
         run: python3 scripts/validate-project.py
+
+      - name: Check OCR and record persistence against example
+        run: |
+          mkdir -p build/artifacts
+          set -o pipefail
+          xcrun swiftc -swift-version 5 ios/Shared/*.swift scripts/check-recognition.swift \
+            -framework Vision -framework CoreImage -framework CoreGraphics \
+            -o build/recognition-check 2>&1 | tee build/recognition-compile.log
+          ./build/recognition-check 2>&1 | tee build/recognition-check.log
 
       - name: Generate Xcode project
         run: xcodegen generate --spec project.json
@@ -77,7 +88,7 @@ jobs:
         run: |
           {
             echo '## Capture demo built'
-            echo '- Device app and ReplayKit extension compiled without signing.'
+            echo '- Device app and OCR extension built; entitlement carrier is ad-hoc signed for local re-signing.'
             echo '- Simulator app launched; screenshot is included in the artifact.'
             echo '- Download PokeCapture-demo and install PokeCapture-unsigned.ipa using AltStore Classic on Windows.'
             echo '- Keep App Extensions when prompted. The IPA cannot be installed directly.'

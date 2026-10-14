@@ -7,8 +7,8 @@
   "settings": {
     "base": {
       "SWIFT_VERSION": "5.0",
-      "MARKETING_VERSION": "0.1.0",
-      "CURRENT_PROJECT_VERSION": "1",
+      "MARKETING_VERSION": "0.2.0",
+      "CURRENT_PROJECT_VERSION": "2",
       "CODE_SIGNING_ALLOWED": "NO",
       "TARGETED_DEVICE_FAMILY": "1,2"
     }
@@ -19,11 +19,13 @@
       "platform": "iOS",
       "sources": [
         { "path": "ios/PokeCapture", "excludes": ["Info.plist"] },
-        "ios/Shared"
+        { "path": "ios/Shared", "excludes": ["PokeCapture.entitlements"] },
+        "ios/Resources"
       ],
       "settings": {
         "base": {
           "PRODUCT_BUNDLE_IDENTIFIER": "com.pokecapture.demo",
+          "CODE_SIGN_ENTITLEMENTS": "ios/Shared/PokeCapture.entitlements",
           "INFOPLIST_FILE": "ios/PokeCapture/Info.plist",
           "GENERATE_INFOPLIST_FILE": "NO",
           "SUPPORTED_PLATFORMS": "iphoneos iphonesimulator",
@@ -39,11 +41,13 @@
       "platform": "iOS",
       "sources": [
         { "path": "ios/BroadcastUpload", "excludes": ["Info.plist"] },
-        "ios/Shared"
+        { "path": "ios/Shared", "excludes": ["PokeCapture.entitlements"] },
+        "ios/Resources"
       ],
       "settings": {
         "base": {
           "PRODUCT_BUNDLE_IDENTIFIER": "com.pokecapture.demo.BroadcastUpload",
+          "CODE_SIGN_ENTITLEMENTS": "ios/Shared/PokeCapture.entitlements",
           "INFOPLIST_FILE": "ios/BroadcastUpload/Info.plist",
           "GENERATE_INFOPLIST_FILE": "NO",
           "APPLICATION_EXTENSION_API_ONLY": "YES",

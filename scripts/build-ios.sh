@@ -22,6 +22,11 @@ test -f "$extension_path/BroadcastUpload"
 xcrun lipo "$app_path/PokeCapture" -verify_arch arm64
 xcrun lipo "$extension_path/BroadcastUpload" -verify_arch arm64
 
+codesign --force --sign - --entitlements ios/Shared/PokeCapture.entitlements "$extension_path"
+codesign --force --sign - --entitlements ios/Shared/PokeCapture.entitlements "$app_path"
+codesign --verify --strict "$extension_path"
+codesign --verify --strict "$app_path"
+
 ditto "$app_path" build/package/Payload/PokeCapture.app
 (
   cd build/package
@@ -34,5 +39,5 @@ cp docs/iphone-testing.md build/artifacts/INSTALL.md
   xcodebuild -version
   xcodegen --version
   echo "Commit: $(git rev-parse HEAD)"
-  echo 'Signing: unsigned; re-sign both the app and extension locally before installation.'
+  echo 'Signing: ad-hoc entitlement carrier only; re-sign both targets with a device provisioning profile before installation.'
 } > build/artifacts/build-info.txt

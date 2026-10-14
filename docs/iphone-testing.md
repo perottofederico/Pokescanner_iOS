@@ -2,11 +2,11 @@
 
 ## Cost and signing: read this first
 
-GitHub Actions compiles the app on a hosted Mac. The artifact is an **unsigned IPA**, not an automatically installable iPhone app. It must be re-signed locally with your Apple account, including its embedded broadcast extension.
+GitHub Actions compiles the app on a hosted Mac. The artifact is **not device-provisioned**, so it cannot be installed directly. Version 0.2 applies ad-hoc signatures only to carry shared App Group entitlements. AltStore must re-sign it locally with your Apple account, including its embedded broadcast extension.
 
 - Standard GitHub-hosted runners are free for public repositories. Private repositories have plan-specific included usage and limits; check your billing settings before enabling builds. No paid Apple membership or signing secrets are required by this workflow.
 - The proposed free installation route is **AltStore Classic + AltServer on Windows** and a free Apple account. This is not AltStore PAL. Free provisioning expires after seven days and has app/App ID limits. Refresh using AltStore before expiry.
-- This demo deliberately does not require App Groups, iCloud, push, or other provisioning entitlements. Future shared storage/OCR architecture may change the signing requirements.
+- Version 0.2 requires a shared App Group for persisting live OCR results while the host app is suspended. Keep both the App Group entitlement and broadcast extension when re-signing. Verify shared-storage status after installation; an installable app alone does not prove this capability works. See [recognition and signing details](recognition.md).
 - Compatibility of this specific broadcast extension with your free provisioning account/iOS version is an acceptance test, not yet a verified promise. If signing/installing the extension fails, do not remove it to make installation succeed: capture requires it. Save the exact error so we can investigate.
 - Do not put your Apple password, certificates, or provisioning profiles into GitHub Actions or chat. Enter account credentials only in the signing tool you choose to trust. Review AltStore's security information before using it.
 
@@ -14,7 +14,7 @@ GitHub Actions compiles the app on a hosted Mac. The artifact is an **unsigned I
 
 1. Push this project to your GitHub repository on `main` or `master`. A public repository exposes your source code; choose public only if that is acceptable.
 2. Open the repository's **Actions** tab and select **Build iPhone capture demo**. It runs on relevant pushes; you can also use **Run workflow** after the workflow is on the default branch.
-3. Wait for a successful run. It generates the Xcode project, compiles both device targets, packages the IPA, checks the embedded extension, and builds/launches a simulator app.
+3. Wait for a successful run. It checks the OCR/pixel pipeline against the example screenshot, generates the Xcode project, compiles both device targets, packages the IPA with App Group entitlement carriers, and builds/launches a simulator app.
 4. Download the **PokeCapture-demo** artifact and extract it. The app is `PokeCapture-unsigned.ipa`. You also get tool versions, a checksum, and simulator launch evidence. Build logs are in the separate **PokeCapture-diagnostics** artifact, which may also be uploaded after a failed build. A diagnostics upload does not mean an IPA was produced.
 5. A green workflow does **not** establish that screen capture works on an iPhone. Complete the physical-device steps below.
 
@@ -35,7 +35,7 @@ Follow the current official [Windows installation guide](https://faq.altstore.io
 1. Transfer `PokeCapture-unsigned.ipa` to the iPhone's Files app, for example with a cloud drive or iTunes file sharing. An unsigned IPA is not a secret, but do not publicly share any subsequently signed copy containing provisioning details.
 2. Keep AltServer running and reachable, then open **AltStore → My Apps → +** and select the IPA, following its current sideloading instructions.
 3. If AltStore asks about extensions, choose **Keep App Extensions**. The extension uses an additional App ID.
-4. Open **Poke Capture**. Under Screen broadcast, confirm an embedded provider identifier is shown and there is no “Broadcast extension missing” message.
+4. Open **Poke Capture → Scan**. Confirm an embedded provider identifier is shown, there is no “Broadcast extension missing” message, and shared scan storage is available.
 5. If the extension is missing, reinstall with extensions retained. Do not treat an app-only installation as a successful test.
 
 The app finds the embedded extension's actual identifier at runtime because sideloading tools can rewrite bundle identifiers. It does not assume the original identifier survives re-signing.
@@ -61,17 +61,17 @@ The heartbeat display is **best-effort diagnostic telemetry** using payload-free
 
 If the system says capture is active but no heartbeats appear even after returning, report that as a diagnostic failure. Do not claim the complete live-capture test passed. Device logs under subsystem `com.pokecapture.demo`, category `Broadcast`, contain lifecycle events and frame dimensions/counts, not screen contents; collecting them may require additional device-log tooling.
 
-## What this demo does not do
+## Recognition scope
 
-- No OCR, Pokémon recognition, collection database, or reproduction of Poke Genie's UI.
+- Version 0.2 adds name-based OCR, IV-bar reading, and persistent partial records with detail views. See [the recognition guide](recognition.md) for supported fields and limitations. It does not reproduce Poke Genie's UI or classify 3D models.
 - No saved video or Photos entry: this is a ReplayKit broadcast receiver, not a video-file recorder.
-- No network connection, server, uploading, retained pixel buffers, or audio processing.
-- No proof of which foreground app a frame came from. Returning to the demo proves live video receipt there and extension survival, not content recognition of Pokémon GO.
+- No network connection, server, uploading, saved pixel buffers, or audio processing. One sampled pixel buffer can be retained temporarily while its OCR request runs; at most one request runs at a time.
+- The scanner uses visible detail-screen features, not a privileged foreground-app identifier. Verify recognition by inspecting saved Pokémon records, not just video heartbeats.
 - No automated start/stop bypassing Apple's controls, App Store submission, or TestFlight distribution.
 
 ## Validation boundaries
 
-On Windows, run `python scripts/validate-project.py` to check configuration and plists. Actual Swift compilation and the simulator smoke check require Apple's SDKs and run in GitHub Actions. The simulator script verifies launch and that the process survives until termination; its screenshot is supporting evidence, not an automated UI assertion. The physical-device broadcast test remains manual.
+On Windows, run `python scripts/validate-project.py` to check configuration, plists, catalog, and shared entitlements. Actual Apple Vision fixture checks, Swift compilation, and simulator launch require Apple's SDKs and run in GitHub Actions. The physical-device broadcast, shared-group provisioning, and multi-page recognition test remain manual.
 
 ## Primary references
 

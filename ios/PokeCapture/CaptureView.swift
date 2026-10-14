@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CaptureView: View {
+    @EnvironmentObject private var library: PokemonLibrary
     @StateObject private var monitor = BroadcastMonitor()
     private let extensionIdentifier = EmbeddedBroadcast.identifier
 
@@ -24,12 +25,12 @@ struct CaptureView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("LIVE CAPTURE DEMO", systemImage: "record.circle")
+            Label("LIVE POKÉMON RECOGNITION", systemImage: "record.circle")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.blue)
-            Text("First, prove the capture.")
+            Text("Scan. Appraise. Save.")
                 .font(.largeTitle.weight(.bold))
-            Text("Start an iOS screen broadcast, switch to Pokémon GO, then return here to check that video is reaching the extension.")
+            Text("Start a broadcast, open Pokémon GO, and hold each Pokémon's detail, appraisal, and moves screens steady for a few seconds. Readable fields are combined in your saved list.")
                 .foregroundStyle(.secondary)
         }
     }
@@ -45,6 +46,16 @@ struct CaptureView: View {
                 .font(.headline)
                 .foregroundStyle(receiving ? Color.green : Color.secondary)
                 Text(monitor.lifecycle)
+                LabeledContent("Saved Pokémon", value: "\(library.records.count)")
+                if let problem = monitor.recognitionProblem {
+                    Text(problem).foregroundStyle(.orange)
+                }
+                #if !targetEnvironment(simulator)
+                if library.sharedDirectory == nil {
+                    Text(RecognitionError.sharedStorageUnavailable.localizedDescription)
+                        .foregroundStyle(.orange)
+                }
+                #endif
                 LabeledContent("Video heartbeats observed", value: "\(monitor.heartbeatCount)")
                     .font(.subheadline.monospacedDigit())
                 if let lastVideoAt = monitor.lastVideoAt {
@@ -106,8 +117,8 @@ struct CaptureView: View {
                 .font(.title2.weight(.semibold))
             Text("1. Start Broadcast and wait for the countdown.")
             Text("2. Verify the red iOS recording indicator and live video status here.")
-            Text("3. Open Pokémon GO for 15–30 seconds.")
-            Text("4. Return here. New video heartbeats should appear within a few seconds.")
+            Text("3. Hold the detail, appraisal, and moves pages for 3–5 seconds each. Keep the species name visible on the first page.")
+            Text("4. Return to the Pokémon tab to inspect saved records, including partial scans.")
             Text("5. Stop using the red iOS indicator or broadcast controls. Heartbeats should stop.")
         }
         .font(.subheadline)
@@ -115,9 +126,9 @@ struct CaptureView: View {
 
     private var privacy: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Nothing saved or uploaded", systemImage: "lock.shield")
+            Label("On-device recognition", systemImage: "lock.shield")
                 .font(.headline)
-            Text("The extension inspects video-buffer dimensions and discards each buffer. Audio is ignored. There is no OCR, Pokémon collection, network upload, or recording saved to Photos yet.")
+            Text("Species names, CP, HP, moves, and readable IVs are saved locally. Screen pixels and audio are discarded; there are no network uploads or saved recordings. Name-based recognition supports English/Italian; nicknames without a visible species reference and 3D-model-only recognition are not supported yet.")
             Text("iOS may warn that everything on screen is captured. Avoid passwords and private notifications; stop the broadcast when you finish testing.")
         }
         .font(.caption)

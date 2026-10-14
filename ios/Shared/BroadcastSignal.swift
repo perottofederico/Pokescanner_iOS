@@ -7,6 +7,9 @@ enum BroadcastSignal: String, CaseIterable {
     case paused
     case resumed
     case stopped
+    case recordsChanged
+    case storageUnavailable
+    case recognitionFailed
 
     var notificationName: CFNotificationName {
         CFNotificationName(rawValue: "com.pokecapture.demo.telemetry.\(rawValue)" as CFString)

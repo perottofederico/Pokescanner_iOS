@@ -2,7 +2,7 @@
 
 # Pokegenie for me
 
-First milestone: a native **iOS live-capture proof of concept**, developed on Windows and compiled using GitHub Actions. It contains a SwiftUI host app and a ReplayKit Broadcast Upload Extension. No OCR or Pokémon collection yet.
+A native **iOS Pokémon scanner**, developed on Windows and compiled using GitHub Actions. The SwiftUI app displays a persistent collection; its ReplayKit extension performs on-device Apple Vision OCR while Pokémon GO is open.
 
 ## Try it on an iPhone
 
@@ -10,25 +10,28 @@ First milestone: a native **iOS live-capture proof of concept**, developed on Wi
 2. Run **Actions → Build iPhone capture demo**.
 3. Download and extract **PokeCapture-demo** from the successful run.
 4. Re-sign/install `PokeCapture-unsigned.ipa` with **AltStore Classic on Windows**, retaining the broadcast extension.
-5. Launch **Poke Capture**, tap its broadcast icon, and confirm **Start Broadcast** in the iOS dialog. Check live video heartbeats, switch to Pokémon GO, return, then stop using iOS's recording controls.
+5. Open **Scan**, start the broadcast, and hold the Pokémon detail, appraisal, and moves pages steady for 3–5 seconds each. Return to **Pokémon** to open the saved records. Stop using iOS's recording controls.
+6. Alternatively, use **Import a screenshot** in the Pokémon tab to recognize a single image, including the example in `assets/recognition-example.jpg`.
 
-**Read [the installation and device-test guide](docs/iphone-testing.md) first.** The IPA is unsigned and cannot be installed directly. Free provisioning requires periodic refresh; this extension's compatibility still needs testing on your device. Public repositories use free standard GitHub-hosted runners; private repositories have plan-specific limits. No Apple secrets are used by CI.
+**Read [the installation guide](docs/iphone-testing.md) and [recognition guide](docs/recognition.md) first.** The IPA cannot be installed directly: it uses ad-hoc signatures to carry the shared App Group entitlement, then AltStore must re-sign both targets for your device. Shared storage is new in version 0.2; its availability must be checked after installation. No Apple credentials are used by CI.
 
 ## Scope and privacy
 
-- Uses the real system broadcast picker and receives real video buffers in a separate extension.
-- Displays best-effort foreground video heartbeats, not simulated recording status.
-- Discards buffers immediately; no videos, screenshots, audio, or uploads are saved by the demo.
-- The simulator workflow checks compilation/launch only. Actual cross-app recording requires the manual iPhone test.
+- Reads English/Italian species names, CP, current/max HP, and full move names. No 3D-model classifier yet.
+- Measures visible appraisal bars for attack/defense/stamina IVs. Unclear fields stay missing, not zero.
+- Persists partial Pokémon records, enriching the current scan across nearby pages without globally merging same-species specimens.
+- Samples one frame at a time, approximately every 1.3 seconds with backpressure. Pixels/audio are discarded; only structured Pokémon data stays on device.
+- Includes native macOS checks for the supplied screenshot, parser/merging behavior, and persistence. Live capture still requires a physical-device test.
 
 ## Project layout
 
 - `ios/PokeCapture/`: SwiftUI app, system picker, and capture diagnostics.
 - `ios/BroadcastUpload/`: ReplayKit sample handler.
-- `ios/Shared/`: payload-free diagnostic notifications; no App Group entitlement required.
+- `ios/Shared/`: OCR, IV pixels, record models, catalog parsing, and shared App Group outbox.
+- `ios/Resources/`: bundled English/Italian PokéAPI species/move names and required license.
 - `project.json`: XcodeGen specification for both targets (iOS 16+).
 - `.github/workflows/ios-demo.yml`: unsigned device build, IPA artifact, and simulator smoke check.
-- `scripts/`: project/IPA validation and macOS build scripts.
+- `scripts/`: project/IPA validation, catalog generation, native recognition checks, and macOS builds.
 
 Run `python scripts/validate-project.py` on Windows. On a Mac or CI runner with Xcode and XcodeGen, run:
 
@@ -38,4 +41,4 @@ bash scripts/build-ios.sh
 bash scripts/smoke-simulator.sh
 ```
 
-Generated Xcode projects and build artifacts are ignored. Configuration disables signing by default; no certificate, paid team, App Group, third-party SDK, or server is required to build this demo.
+Generated Xcode projects and build artifacts are ignored. Xcode builds without developer signing; packaging applies local ad-hoc signatures only to preserve App Group entitlements for the sideloading tool. No developer certificate, third-party SDK, or server is required to build. The catalog is pinned to a source revision and regenerated only by `python scripts/generate-catalog.py`; the running app never downloads it.

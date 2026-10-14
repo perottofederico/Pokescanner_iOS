@@ -37,8 +37,12 @@ def validate_source():
             source_path = source['path'] if isinstance(source, dict) else source
             require((ROOT / source_path).is_dir(), f'Missing source directory: {source_path}')
         settings = target['settings']['base']
-        require('CODE_SIGN_ENTITLEMENTS' not in settings,
-                'Demo should not require restricted provisioning entitlements.')
+        require(settings['CODE_SIGN_ENTITLEMENTS'] == 'ios/Shared/PokeCapture.entitlements',
+                'Host and extension must use the same App Group entitlement file.')
+        with (ROOT / settings['CODE_SIGN_ENTITLEMENTS']).open('rb') as entitlement_file:
+            entitlements = plistlib.load(entitlement_file)
+        require(entitlements == {'com.apple.security.application-groups': ['group.com.pokecapture.shared']},
+                'Only the required shared scan App Group should be requested.')
         with (ROOT / settings['INFOPLIST_FILE']).open('rb') as plist_file:
             info = plistlib.load(plist_file)
         require(info['CFBundleIdentifier'] == '$(PRODUCT_BUNDLE_IDENTIFIER)',
@@ -47,7 +51,11 @@ def validate_source():
                 'App and extension versions must use matching build settings.')
         if target['type'] == 'app-extension':
             validate_extension_info(info, '$(PRODUCT_MODULE_NAME).SampleHandler')
-    print('PASS: project specification, plist files, embedding, and unsigned configuration.')
+    catalog = json.loads((ROOT / 'ios/Resources/pokemon-catalog.json').read_text(encoding='utf-8'))
+    require(any(entry['name'] == 'Haxorus' for entry in catalog['species']), 'Species catalog missing example species.')
+    require(any(entry['name'] == 'Dragon Tail' for entry in catalog['moves']), 'Move catalog missing Dragon Tail.')
+    require((ROOT / 'ios/Resources/PokeAPI-LICENSE.txt').is_file(), 'Catalog license must ship with the app.')
+    print('PASS: targets, plists, shared App Group, bundled catalog, and no-credential build configuration.')
 
 
 def validate_extension_info(info, principal_class):
@@ -67,6 +75,10 @@ def validate_ipa(ipa_path):
         app_info = plistlib.loads(archive.read(app_prefix + 'Info.plist'))
         extension_info = plistlib.loads(archive.read(extension_prefix + 'Info.plist'))
         for prefix, info in [(app_prefix, app_info), (extension_prefix, extension_info)]:
+            require(archive.getinfo(prefix + 'pokemon-catalog.json').file_size > 0,
+                    'Both app and extension must include the recognition catalog.')
+            require(archive.getinfo(prefix + '_CodeSignature/CodeResources').file_size > 0,
+                    'Ad-hoc signature must carry App Group entitlements for the sideloading tool.')
             require(archive.getinfo(prefix + info['CFBundleExecutable']).file_size > 0,
                     'Compiled binary missing or empty.')
             require(info['CFBundleSupportedPlatforms'] == ['iPhoneOS'],

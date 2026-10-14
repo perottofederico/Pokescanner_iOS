@@ -7,6 +7,7 @@ final class BroadcastMonitor: ObservableObject {
     @Published private(set) var heartbeatCount = 0
     @Published private(set) var lifecycle = "Waiting for a broadcast"
     @Published private(set) var isPaused = false
+    @Published private(set) var recognitionProblem: String?
 
     init() {
         let observer = Unmanaged.passUnretained(self).toOpaque()
@@ -48,6 +49,7 @@ final class BroadcastMonitor: ObservableObject {
     private func receive(_ signal: BroadcastSignal) {
         switch signal {
         case .started:
+            recognitionProblem = nil
             heartbeatCount = 0
             lastVideoAt = nil
             isPaused = false
@@ -69,6 +71,12 @@ final class BroadcastMonitor: ObservableObject {
             lastVideoAt = nil
             isPaused = false
             lifecycle = "Broadcast stopped"
+        case .recordsChanged:
+            recognitionProblem = nil
+        case .storageUnavailable:
+            recognitionProblem = RecognitionError.sharedStorageUnavailable.localizedDescription
+        case .recognitionFailed:
+            recognitionProblem = "Recognition failed for a frame. Check storage/signing or try a clearer screen."
         }
     }
 }
